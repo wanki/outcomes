@@ -4,11 +4,13 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import static java.lang.String.format;
 import static lombok.AccessLevel.PRIVATE;
 
 @RequiredArgsConstructor(access = PRIVATE)
@@ -31,6 +33,10 @@ public class Outcome<T> {
 
     public static <T> Outcome<T> failure(int code, String message) {
         return failure(FailureMeta.of(code, message), null);
+    }
+
+    public static <T> Outcome<T> failure(String message) {
+        return failure(0, message);
     }
 
     private static <T> Outcome<T> failure(FailureMeta failureMeta, Exception ex) {
@@ -71,6 +77,21 @@ public class Outcome<T> {
         return this;
     }
 
+    public Outcome<T> log(Logger log, String messagePrefix) {
+        Logger logger = log != null ? log : Outcome.log;
+        if (success) {
+            logger.info(messagePrefix + ": Success");
+        } else {
+            logger.info(format(messagePrefix + ": Failure. Code: %s, message: %s", failureMeta.code, failureMeta.message), exceptionCaught);
+        }
+
+        return this;
+    }
+
+    public Outcome<T> log(String messagePrefix) {
+        return log(null, messagePrefix);
+    }
+
     private <R> Outcome<R> safelyInvoke(Function<T, Outcome<R>> outcomeMapper) {
         try {
             return outcomeMapper.apply(value);
@@ -85,4 +106,3 @@ public class Outcome<T> {
         String message;
     }
 }
-
